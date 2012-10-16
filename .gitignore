@@ -1,0 +1,12 @@
+packages/*
+[Oo]bj
+[Bb]in
+*.user
+*.suo
+*.[Cc]ache
+*.bak
+*.ncb
+*.log 
+_ReSharper.*
+*.resharper
+*.orig
