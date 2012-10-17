@@ -8,16 +8,13 @@ namespace WebSocketClient
 {
    public class SocketIOClient
    {
-      private static WebSocketVersion SocketVersion = WebSocketVersion.Rfc6455;
+      public const string DefaultNamespace = "";
 
-      private readonly Dictionary<string, List<Action<string>>> m_eventListeners =
-         new Dictionary<string, List<Action<string>>>();
+      private const WebSocketVersion SocketVersion = WebSocketVersion.Rfc6455;
+
+      private readonly Dictionary<string, Namespace> m_nameSpaces = new Dictionary<string, Namespace>();
 
       private WebSocket m_socket;
-
-      public SocketIOClient()
-      {
-      }
 
       public bool AllowUnstrustedCertificate { get; set; }
 
@@ -32,12 +29,16 @@ namespace WebSocketClient
          if (Connected || Connecting || Reconnecting)
             return;
 
+         ServerUrl = serverUrl;
+         
          var uri = new Uri(serverUrl);
 
          var handshakeResult = DoHandshake(uri);
 
          if (handshakeResult == HandshakeResult.Success)
          {
+            Publish("connecting");
+
             m_socket = new WebSocket(
                string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}", uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id),
                string.Empty,
@@ -47,13 +48,13 @@ namespace WebSocketClient
             m_socket.Opened += OnOpened;
             m_socket.MessageReceived += OnMessageReceived;
             m_socket.Error += OnError;
-            m_socket.DataReceived += OnDataReceived;
             m_socket.Closed += OnClosed;
 
             m_socket.Open();
          }
-
       }
+
+      protected string ServerUrl { get; private set; }
 
       private HandshakeResult DoHandshake(Uri uri)
       {
@@ -61,15 +62,14 @@ namespace WebSocketClient
 
          try
          {
-            var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") + 
-               "t=" + (DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0,0,0, DateTimeKind.Utc)).TotalMilliseconds;
+            var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") +
+               "t=" + (DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
 
             responseText = new WebClient().DownloadString(string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query));
             var resultParts = responseText.Split(new[] { ':' });
 
             Id = resultParts[0];
-            HeartbeatTimeout = Int32.Parse(resultParts[1]);
-            ConnectionTimeout = Int32.Parse(resultParts[2]);
+            HeartbeatTimeout = Int32.Parse(resultParts[1]) * 1000;
          }
          catch (WebException we)
          {
@@ -81,14 +81,14 @@ namespace WebSocketClient
                {
                   return HandshakeResult.Forbidden;
                }
-               
-               Raise("error", responseText);
+
+               Publish("error", responseText);
                return HandshakeResult.Error;
             }
          }
          catch (Exception)
          {
-            Raise("error", responseText);
+            Publish("error", responseText);
             return HandshakeResult.Error;
          }
 
@@ -97,74 +97,120 @@ namespace WebSocketClient
 
       public int HeartbeatTimeout { get; private set; }
 
-      public int ConnectionTimeout { get; private set; }
-
       public string Id { get; private set; }
-      
-      private void Raise(string eventName, string data)
-      {
-      }
 
-      public void On(string eventName, Action<string> callback)
+      public void On(string eventName, Action<string, Action<string>> callback)
       {
-         if (m_eventListeners.ContainsKey(eventName))
-         {
-            m_eventListeners[eventName].Add(callback);
-         }
-         else
-         {
-            m_eventListeners[eventName] = new List<Action<string>> { callback };
-         }
-      }
-
-      public void RemoveListener(string eventName, Action<string> callback)
-      {
-         if (m_eventListeners.ContainsKey(eventName))
-         {
-            m_eventListeners[eventName].Remove(callback);
-         }
-      }
-
-      public void Send(string message)
-      {
-
+         Of(DefaultNamespace).On(eventName, callback);
       }
 
       public void Emit(string eventName, string data)
       {
-
+         Of(DefaultNamespace).Emit(eventName, data);
       }
 
       public void Disconnect()
       {
+         var wasConnected = Connected || Connecting;
 
+         m_socket.Close();
+
+         if (wasConnected)
+         {
+            Publish("disconnect");
+         }
+      }
+
+      private void Publish(string eventName, string data = null)
+      {
+         foreach(var item in m_nameSpaces)
+         {
+            item.Value.EmitLocally(eventName, data);
+         }
+      }
+
+      public Namespace Of(string name)
+      {
+         if (name == null || string.IsNullOrEmpty(name.Trim()))
+         {
+            name = DefaultNamespace;
+         }
+
+         if (m_nameSpaces.ContainsKey(name))
+         {
+            return m_nameSpaces[name];
+         }
+         
+         m_nameSpaces[name] = new Namespace(name, this);
+         
+         if (name != DefaultNamespace)
+         {
+            m_nameSpaces[name].Connect();
+         }
+
+         return m_nameSpaces[name];
       }
 
       private void OnOpened(object sender, EventArgs e)
       {
-
+         Publish("connect");
       }
 
       private void OnError(object sender, ErrorEventArgs e)
       {
-
+         Publish("error", e.Exception.Message);
       }
 
       private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
       {
-         var messageParts = e.Message.Split(new[] { ':' }, 4);
+         var packet = PacketParser.DecodePacket(e.Message);
 
-         Console.WriteLine(e.Message);
+         if (packet.Type == PacketType.Error && packet.Advice != null)
+         {
+            if (packet.Advice == "reconnect" && (Connected || Connecting))
+            {
+               Disconnect();
+               Reconnect();
+            }
+
+            Publish("error", packet.Reason);
+         }
+         else
+         {
+            Of(packet.EndPoint).HandlePacket(packet);
+         }
       }
 
-      private void OnDataReceived(object sender, DataReceivedEventArgs e)
+      public void Reconnect()
       {
-         Console.WriteLine(e.Data);
+         Reconnecting = true;
+
+         try
+         {
+            Connect(ServerUrl);
+         }
+         finally
+         {
+            Reconnecting = false;
+         }
+      }
+
+      public void SendPacket(Packet packet)
+      {
+         if (Connected)
+         {
+            m_socket.Send(PacketParser.EncodePacket(packet));
+         }
+         else
+         {
+            //Buffer up the packets until the connection is made
+            throw new NotImplementedException();
+         }
       }
 
       private void OnClosed(object sender, EventArgs e)
       {
-
+         Publish("disconnect");
       }
    }
 }

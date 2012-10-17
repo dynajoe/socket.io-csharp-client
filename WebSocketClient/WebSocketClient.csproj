@@ -46,6 +46,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Namespace.cs" />
     <Compile Include="HandshakeResult.cs" />
     <Compile Include="PacketParser.cs" />
     <Compile Include="EntryPoint.cs" />
