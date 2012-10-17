@@ -19,11 +19,13 @@ namespace WebSocketClient
       {
       }
 
-      public bool Connected { get; private set; }
+      public bool AllowUnstrustedCertificate { get; set; }
+
+      public bool Connected { get { return m_socket != null && m_socket.State == WebSocketState.Open; } }
 
       public bool Reconnecting { get; private set; }
 
-      public bool Connecting { get; private set; }
+      public bool Connecting { get { return m_socket != null && m_socket.State == WebSocketState.Connecting; } }
 
       public void Connect(string serverUrl)
       {
@@ -32,42 +34,38 @@ namespace WebSocketClient
 
          var uri = new Uri(serverUrl);
 
-         Connecting = true;
+         var handshakeResult = DoHandshake(uri);
 
-         try
+         if (handshakeResult == HandshakeResult.Success)
          {
-            var handshakeResult = DoHandshake(uri);
+            m_socket = new WebSocket(
+               string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}", uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id),
+               string.Empty,
+               SocketVersion);
 
-            if (handshakeResult == HandshakeResult.Success)
-            {
-               m_socket = new WebSocket(
-                  string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}", uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id),
-                  string.Empty,
-                  SocketVersion);
+            m_socket.AllowUnstrustedCertificate = AllowUnstrustedCertificate;
+            m_socket.Opened += OnOpened;
+            m_socket.MessageReceived += OnMessageReceived;
+            m_socket.Error += OnError;
+            m_socket.DataReceived += OnDataReceived;
+            m_socket.Closed += OnClosed;
 
-               m_socket.Opened += OnOpened;
-               m_socket.MessageReceived += OnMessageReceived;
-               m_socket.Error += OnError;
-               m_socket.DataReceived += OnDataReceived;
-               m_socket.Closed += OnClosed;
-
-               m_socket.Open();
-
-               Connected = true;
-            }
+            m_socket.Open();
          }
-         finally
-         {
-            Connecting = false;
-         }
+
       }
 
       private HandshakeResult DoHandshake(Uri uri)
       {
+         string responseText = null;
+
          try
          {
-            var result = new WebClient().DownloadString(string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, uri.Query));
-            var resultParts = result.Split(new[] { ':' });
+            var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") + 
+               "t=" + (DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0,0,0, DateTimeKind.Utc)).TotalMilliseconds;
+
+            responseText = new WebClient().DownloadString(string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query));
+            var resultParts = responseText.Split(new[] { ':' });
 
             Id = resultParts[0];
             HeartbeatTimeout = Int32.Parse(resultParts[1]);
@@ -83,12 +81,14 @@ namespace WebSocketClient
                {
                   return HandshakeResult.Forbidden;
                }
-
+               
+               Raise("error", responseText);
                return HandshakeResult.Error;
             }
          }
          catch (Exception)
          {
+            Raise("error", responseText);
             return HandshakeResult.Error;
          }
 
@@ -100,6 +100,10 @@ namespace WebSocketClient
       public int ConnectionTimeout { get; private set; }
 
       public string Id { get; private set; }
+      
+      private void Raise(string eventName, string data)
+      {
+      }
 
       public void On(string eventName, Action<string> callback)
       {
@@ -160,7 +164,7 @@ namespace WebSocketClient
 
       private void OnClosed(object sender, EventArgs e)
       {
-         Connected = false;
+
       }
    }
 }
