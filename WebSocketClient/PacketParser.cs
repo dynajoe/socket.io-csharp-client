@@ -60,18 +60,18 @@ namespace WebSocketClient
          {"0", "reconnect"},
       };
 
-      private static readonly Regex PacketRegex = new Regex(@"([^:]+):([0-9]+)?(\+)?:([^:]+)?:?([\s\S]*)?");
+      private static readonly Regex PacketRegex = new Regex(@"(?<Type>[^:]+):(?<Id>[0-9]+)?(?<Ack>\+)?:(?<EndPoint>[^:]+)?:?(?<Data>[\s\S]*)?");
 
       public static Packet DecodePacket(string packetData)
       {
-         var matches = PacketRegex.Matches(packetData);
+         var match = PacketRegex.Match(packetData);
          var packet = new Packet();
 
-         var id = matches[1].Value;
-         var type = (PacketType) int.Parse(matches[0].Value);
-         var data = matches[4].Value;
-         var endPoint = matches[3].Value;
-         var ack = matches[2].Value;
+         var id = match.Groups["Id"].Value;
+         var type = (PacketType)int.Parse(match.Groups["Type"].Value);
+         var data = match.Groups["Data"].Value;
+         var endPoint = match.Groups["EndPoint"].Value;
+         var ack = match.Groups["Ack"].Value;
          
          if (!string.IsNullOrEmpty(id))
          {
@@ -79,6 +79,10 @@ namespace WebSocketClient
             packet.Ack = !string.IsNullOrEmpty(ack) ? "data" : "true";
          }
 
+         packet.Type = type;
+         packet.EndPoint = endPoint;
+         packet.Data = data;
+         
          switch (type)
          {
             case PacketType.Error:

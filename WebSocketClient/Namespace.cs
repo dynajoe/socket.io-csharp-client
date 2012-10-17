@@ -60,7 +60,7 @@ namespace WebSocketClient
 
       public void EmitLocally(string eventName, string data = null, Action<string> ack = null)
       {
-         if (!m_eventListeners.ContainsKey(eventName)) 
+         if (string.IsNullOrEmpty(eventName) || !m_eventListeners.ContainsKey(eventName)) 
             return;
          
          var callbacks = m_eventListeners[eventName];

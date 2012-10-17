@@ -17,18 +17,8 @@ namespace WebSocketClient
                b(null);
             }            
          });
-         
-         client.Of("/Poop").On("data", (a, b) =>
-         {
-            Console.WriteLine(a);
 
-            if (b != null)
-            {
-               b(null);
-            }                                
-         }).On("data2", (a,b) => { });
-         
-         client.Connect(args.Length > 0 ? args[0] : "http://illum-qa-alpha:8081/?sid=abc123");
+         client.Connect(args.Length > 0 ? args[0] : "http://localhost:3000");
 
          Console.ReadLine();
       }
