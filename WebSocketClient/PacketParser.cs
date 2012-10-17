@@ -1,6 +1,8 @@
 using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace WebSocketClient
 {
@@ -44,8 +46,11 @@ namespace WebSocketClient
    {
       private class Event
       {
+         [JsonProperty(PropertyName = "name", Order = 0)]
          public string Name { get; set; }
-         public string Args { get; set; }
+
+         [JsonProperty(PropertyName = "args", Order = 1)]
+         public object Args { get; set; }
       }
 
       private static Dictionary<string, string> Reasons = new Dictionary<string, string>()
@@ -106,9 +111,9 @@ namespace WebSocketClient
 
                break;
             case PacketType.Event:
-               var packetEvent = SimpleJson.SimpleJson.DeserializeObject<Event>(data);
+               var packetEvent = JsonConvert.DeserializeObject<Event>(data);
                packet.Name = packetEvent.Name;
-               packet.Args = packetEvent.Args;
+               packet.Args = ((JContainer)packetEvent.Args).ToString(Formatting.None, null);
                break;
             case PacketType.Ack:
                var ackMatches = Regex.Matches(data, @"^([0-9]+)(\+)?(.*)", RegexOptions.Compiled);
@@ -131,10 +136,18 @@ namespace WebSocketClient
          parts.Add((int) packet.Type);
          parts.Add((packet.Id ?? "") + (packet.Ack == "data" ? "+" : string.Empty));
          parts.Add(packet.EndPoint ?? "");
-         
-         if (packet.Data != null)
+         string data = packet.Data;
+
+         switch (packet.Type)
          {
-            parts.Add(packet.Data);
+            case PacketType.Event:
+               data = JsonConvert.SerializeObject(new Event { Name = packet.Name, Args = packet.Data });
+               break;
+         }
+
+         if (data != null)
+         {
+            parts.Add(data);
          }
 
          return string.Join(":", parts.ToArray());

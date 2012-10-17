@@ -20,6 +20,11 @@ namespace WebSocketClient
 
          client.Connect(args.Length > 0 ? args[0] : "http://localhost:3000");
 
+         client.On("select-avatar", (a,b) => client.Emit("avatar-selected", "[{ 'avatar': 'red.png', 'name': 'Joe' }]"));
+         client.On("update", (a,b) =>
+         {
+            Console.WriteLine(a);
+         });
          Console.ReadLine();
       }
 
