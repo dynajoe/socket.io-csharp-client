@@ -143,6 +143,9 @@ namespace WebSocketClient
             case PacketType.Event:
                data = JsonConvert.SerializeObject(new Event { Name = packet.Name, Args = packet.Data });
                break;
+            case PacketType.Ack:
+               data = packet.AckId + (!string.IsNullOrEmpty(packet.Args) ? "+" + packet.Args : string.Empty) ;
+               break;
          }
 
          if (data != null)
