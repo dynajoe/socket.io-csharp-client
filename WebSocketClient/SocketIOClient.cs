@@ -204,7 +204,6 @@ namespace WebSocketClient
          else
          {
             //Buffer up the packets until the connection is made
-            throw new NotImplementedException();
          }
       }
 

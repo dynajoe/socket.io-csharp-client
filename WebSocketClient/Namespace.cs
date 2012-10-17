@@ -92,24 +92,31 @@ namespace WebSocketClient
          SendPacket(packet);
       }
       
-      public void On(string eventName, Action<string, Action<string>> callback)
+      public Namespace On(string eventName, Action<string, Action<string>> callback)
       {
-         if (m_eventListeners.ContainsKey(eventName))
+         if (callback != null)
          {
-            m_eventListeners[eventName].Add(callback);
+            if (m_eventListeners.ContainsKey(eventName))
+            {
+               m_eventListeners[eventName].Add(callback);
+            }
+            else
+            {
+               m_eventListeners[eventName] = new List<Action<string, Action<string>>> { callback };
+            }
          }
-         else
-         {
-            m_eventListeners[eventName] = new List<Action<string, Action<string>>> { callback };
-         }
+
+         return this;
       }
 
-      public void RemoveListener(string eventName, Action<string, Action<string>> callback)
+      public Namespace RemoveListener(string eventName, Action<string, Action<string>> callback)
       {
          if (m_eventListeners.ContainsKey(eventName))
          {
             m_eventListeners[eventName].Remove(callback);
          }
+
+         return this;
       }
 
       public void Disconnect()
