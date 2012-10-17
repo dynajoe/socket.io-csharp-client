@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Timers;
 using SuperSocket.ClientEngine;
 using WebSocket4Net;
 
@@ -14,7 +15,15 @@ namespace WebSocketClient
 
       private readonly Dictionary<string, Namespace> m_nameSpaces = new Dictionary<string, Namespace>();
 
+      private readonly Timer m_heartBeatTimer;
+
       private WebSocket m_socket;
+
+      public SocketIOClient()
+      {
+         m_heartBeatTimer = new Timer { Enabled = true, AutoReset = true };
+         m_heartBeatTimer.Elapsed += OnHeartBeat;
+      }
 
       public bool AllowUnstrustedCertificate { get; set; }
 
@@ -28,6 +37,8 @@ namespace WebSocketClient
       {
          if (Connected || Connecting || Reconnecting)
             return;
+         
+         m_heartBeatTimer.Stop();
 
          ServerUrl = serverUrl;
          
@@ -49,12 +60,21 @@ namespace WebSocketClient
             m_socket.MessageReceived += OnMessageReceived;
             m_socket.Error += OnError;
             m_socket.Closed += OnClosed;
+            m_socket.EnableAutoSendPing = false; //Socket.IO has a different mechanism for heartbeats
 
             m_socket.Open();
+
+            m_heartBeatTimer.Interval = HeartbeatTimeout;
+            m_heartBeatTimer.Start();
          }
       }
 
       protected string ServerUrl { get; private set; }
+
+      private void OnHeartBeat(object sender, ElapsedEventArgs e)
+      {
+         SendPacket(new Packet { Type = PacketType.Heartbeat });
+      }
 
       private HandshakeResult DoHandshake(Uri uri)
       {
@@ -63,9 +83,12 @@ namespace WebSocketClient
          try
          {
             var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") +
-               "t=" + (DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+               "t=" + Math.Round((DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds, 0);
+            
+            var handshakeUrl = string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query);
+            
+            responseText = new WebClient().DownloadString(handshakeUrl);
 
-            responseText = new WebClient().DownloadString(string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query));
             var resultParts = responseText.Split(new[] { ':' });
 
             Id = resultParts[0];
@@ -82,7 +105,6 @@ namespace WebSocketClient
                   return HandshakeResult.Forbidden;
                }
 
-               Publish("error", responseText);
                return HandshakeResult.Error;
             }
          }
