@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Timers;
 using SuperSocket.ClientEngine;
 using WebSocket4Net;
+using Timer = System.Timers.Timer;
 
 namespace WebSocketClient
 {
@@ -13,19 +15,31 @@ namespace WebSocketClient
 
       private const WebSocketVersion SocketVersion = WebSocketVersion.Rfc6455;
 
+      private readonly Queue<Packet> m_packetQueue = new Queue<Packet>();
+      
       private readonly Dictionary<string, Namespace> m_nameSpaces = new Dictionary<string, Namespace>();
 
       private readonly Timer m_heartBeatTimer;
 
       private WebSocket m_socket;
 
+      private readonly object m_packetSyncRoot = new object();
+
       public SocketIOClient()
       {
          m_heartBeatTimer = new Timer { Enabled = true, AutoReset = true };
          m_heartBeatTimer.Elapsed += OnHeartBeat;
+
+         ThreadPool.QueueUserWorkItem(ProcessPackets);
       }
 
       public bool AllowUnstrustedCertificate { get; set; }
+
+      public int HeartbeatTimeout { get; private set; }
+
+      public string Id { get; private set; }
+
+      protected string ServerUrl { get; private set; }
 
       public bool Connected { get { return m_socket != null && m_socket.State == WebSocketState.Open; } }
 
@@ -37,11 +51,11 @@ namespace WebSocketClient
       {
          if (Connected || Connecting || Reconnecting)
             return;
-         
+
          m_heartBeatTimer.Stop();
 
          ServerUrl = serverUrl;
-         
+
          var uri = new Uri(serverUrl);
 
          var handshakeResult = DoHandshake(uri);
@@ -69,58 +83,6 @@ namespace WebSocketClient
          }
       }
 
-      protected string ServerUrl { get; private set; }
-
-      private void OnHeartBeat(object sender, ElapsedEventArgs e)
-      {
-         SendPacket(new Packet { Type = PacketType.Heartbeat });
-      }
-
-      private HandshakeResult DoHandshake(Uri uri)
-      {
-         string responseText = null;
-
-         try
-         {
-            var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") +
-               "t=" + Math.Round((DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds, 0);
-            
-            var handshakeUrl = string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query);
-            
-            responseText = new WebClient().DownloadString(handshakeUrl);
-
-            var resultParts = responseText.Split(new[] { ':' });
-
-            Id = resultParts[0];
-            HeartbeatTimeout = Int32.Parse(resultParts[1]) * 1000;
-         }
-         catch (WebException we)
-         {
-            if (we.Status == WebExceptionStatus.ProtocolError)
-            {
-               var resp = we.Response as HttpWebResponse;
-
-               if (resp != null && resp.StatusCode == HttpStatusCode.Forbidden)
-               {
-                  return HandshakeResult.Forbidden;
-               }
-
-               return HandshakeResult.Error;
-            }
-         }
-         catch (Exception)
-         {
-            Publish("error", responseText);
-            return HandshakeResult.Error;
-         }
-
-         return HandshakeResult.Success;
-      }
-
-      public int HeartbeatTimeout { get; private set; }
-
-      public string Id { get; private set; }
-
       public void On(string eventName, Action<string, Action<string>> callback)
       {
          Of(DefaultNamespace).On(eventName, callback);
@@ -143,14 +105,6 @@ namespace WebSocketClient
          }
       }
 
-      private void Publish(string eventName, string data = null)
-      {
-         foreach(var item in m_nameSpaces)
-         {
-            item.Value.EmitLocally(eventName, data);
-         }
-      }
-
       public Namespace Of(string name)
       {
          if (name == null || string.IsNullOrEmpty(name.Trim()))
@@ -162,9 +116,9 @@ namespace WebSocketClient
          {
             return m_nameSpaces[name];
          }
-         
+
          m_nameSpaces[name] = new Namespace(name, this);
-         
+
          if (name != DefaultNamespace)
          {
             m_nameSpaces[name].Connect();
@@ -173,8 +127,90 @@ namespace WebSocketClient
          return m_nameSpaces[name];
       }
 
+      public void Reconnect()
+      {
+         Reconnecting = true;
+
+         try
+         {
+            Connect(ServerUrl);
+         }
+         finally
+         {
+            Reconnecting = false;
+         }
+      }
+
+      public void SendPacket(Packet packet)
+      {
+         lock (m_packetSyncRoot)
+         {
+            m_packetQueue.Enqueue(packet);
+            Monitor.Pulse(m_packetSyncRoot);
+         }
+      }
+
+      private void OnHeartBeat(object sender, ElapsedEventArgs e)
+      {
+         SendPacket(new Packet { Type = PacketType.Heartbeat });
+      }
+
+      private HandshakeResult DoHandshake(Uri uri)
+      {
+         string responseText = null;
+
+         try
+         {
+            var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") +
+                        "t=" + Math.Round((DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds, 0);
+
+            var handshakeUrl = string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query);
+
+            responseText = new WebClient().DownloadString(handshakeUrl);
+
+            var resultParts = responseText.Split(new[] { ':' });
+
+            Id = resultParts[0];
+            HeartbeatTimeout = Int32.Parse(resultParts[1]) * 1000;
+         }
+         catch (WebException we)
+         {
+            if (we.Status == WebExceptionStatus.ProtocolError)
+            {
+               var resp = we.Response as HttpWebResponse;
+
+               if (resp != null && resp.StatusCode == HttpStatusCode.Forbidden)
+               {
+                  return HandshakeResult.Forbidden;
+               }
+            }
+
+            return HandshakeResult.Error;
+         }
+         catch (Exception)
+         {
+            Publish("error", responseText);
+            return HandshakeResult.Error;
+         }
+
+         return HandshakeResult.Success;
+      }
+
+      private void Publish(string eventName, string data = null)
+      {
+         foreach (var item in m_nameSpaces)
+         {
+            item.Value.EmitLocally(eventName, data);
+         }
+      }
+
       private void OnOpened(object sender, EventArgs e)
       {
+         lock (m_packetSyncRoot)
+         {
+            Monitor.Pulse(m_packetSyncRoot);
+         }
+
          Publish("connect");
       }
 
@@ -203,35 +239,50 @@ namespace WebSocketClient
          }
       }
 
-      public void Reconnect()
+      private void ProcessPackets(object state)
       {
-         Reconnecting = true;
+         foreach (var p in NextPacket())
+         {
+            try
+            {
+               m_socket.Send(PacketParser.EncodePacket(p));
 
-         try
-         {
-            Connect(ServerUrl);
-         }
-         finally
-         {
-            Reconnecting = false;
-         }
-      }
+               lock (m_packetSyncRoot)
+               {
+                  if (m_packetQueue.Count > 0)
+                  {
+                     m_packetQueue.Dequeue();
+                  }
+               }
+            }
+            catch (Exception)
+            {
 
-      public void SendPacket(Packet packet)
-      {
-         if (Connected)
-         {
-            m_socket.Send(PacketParser.EncodePacket(packet));
-         }
-         else
-         {
-            //Buffer up the packets until the connection is made
+            }
          }
       }
 
       private void OnClosed(object sender, EventArgs e)
       {
          Publish("disconnect");
+      }
+
+      private IEnumerable<Packet> NextPacket()
+      {
+         lock (m_packetSyncRoot)
+         {
+            while (true)
+            {
+               if (!Connected || m_packetQueue.Count == 0)
+               {
+                  Monitor.Wait(m_packetSyncRoot);
+               }
+               else
+               {
+                  yield return m_packetQueue.Peek();
+               }
+            }
+         }
       }
    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace WebSocketClient
 {
@@ -11,7 +12,9 @@ namespace WebSocketClient
 
       private readonly Dictionary<string, List<Action<string, Action<string>>>> m_eventListeners =
          new Dictionary<string, List<Action<string, Action<string>>>>();
-      
+
+      private ReaderWriterLockSlim SlimLock = new ReaderWriterLockSlim();
+
       private Dictionary<string, Action<string>> m_acks = new Dictionary<string, Action<string>>();
 
       public Namespace(string name, SocketIOClient socket)
@@ -63,12 +66,16 @@ namespace WebSocketClient
          if (string.IsNullOrEmpty(eventName) || !m_eventListeners.ContainsKey(eventName)) 
             return;
          
+         SlimLock.EnterReadLock();
+
          var callbacks = m_eventListeners[eventName];
 
          foreach (var cb in callbacks)
          {
-            cb(data, ack);
+            try { cb(data, ack); } catch { /* Intentionally suppress errors blank. */ }
          }
+
+         SlimLock.ExitReadLock();
       }
 
       public string Name { get; private set; }
@@ -94,8 +101,10 @@ namespace WebSocketClient
       
       public Namespace On(string eventName, Action<string, Action<string>> callback)
       {
-         if (callback != null)
+         if (callback != null && eventName != null)
          {
+            SlimLock.EnterWriteLock();
+
             if (m_eventListeners.ContainsKey(eventName))
             {
                m_eventListeners[eventName].Add(callback);
@@ -104,6 +113,8 @@ namespace WebSocketClient
             {
                m_eventListeners[eventName] = new List<Action<string, Action<string>>> { callback };
             }
+
+            SlimLock.ExitWriteLock();
          }
 
          return this;
@@ -111,9 +122,13 @@ namespace WebSocketClient
 
       public Namespace RemoveListener(string eventName, Action<string, Action<string>> callback)
       {
-         if (m_eventListeners.ContainsKey(eventName))
+         if (callback != null && eventName != null && m_eventListeners.ContainsKey(eventName))
          {
+            SlimLock.EnterWriteLock();
+            
             m_eventListeners[eventName].Remove(callback);
+          
+            SlimLock.ExitWriteLock();
          }
 
          return this;
