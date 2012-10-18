@@ -23,7 +23,7 @@ namespace WebSocketClient
 
       private WebSocket m_socket;
 
-      private readonly object m_packetSyncRoot = new object();
+      private readonly EventWaitHandle m_packetWaitHandle = new EventWaitHandle(true, EventResetMode.ManualReset);
 
       public SocketIOClient()
       {
@@ -142,11 +142,8 @@ namespace WebSocketClient
 
       public void SendPacket(Packet packet)
       {
-         lock (m_packetSyncRoot)
-         {
-            m_packetQueue.Enqueue(packet);
-            Monitor.Pulse(m_packetSyncRoot);
-         }
+         m_packetQueue.Enqueue(packet);
+         m_packetWaitHandle.Set();
       }
 
       private void OnHeartBeat(object sender, ElapsedEventArgs e)
@@ -205,11 +202,7 @@ namespace WebSocketClient
 
       private void OnOpened(object sender, EventArgs e)
       {
-         lock (m_packetSyncRoot)
-         {
-            Monitor.Pulse(m_packetSyncRoot);
-         }
-
+         m_packetWaitHandle.Set();
          Publish("connect");
       }
 
@@ -238,50 +231,38 @@ namespace WebSocketClient
          }
       }
 
+      /// <summary>
+      /// This implementation is not safe for multiple threads attempting to send packets.
+      /// It's intended to ensure delivery of packets when there are packets to send.
+      /// </summary>
       private void ProcessPackets(object state)
       {
-         foreach (var p in NextPacket())
+         while (true)
          {
+            if (!Connected || m_packetQueue.Count == 0)
+            {
+               m_packetWaitHandle.WaitOne();
+               continue;
+            }
+
+            var packet = m_packetQueue.Peek();
+
             try
             {
-               m_socket.Send(PacketParser.EncodePacket(p));
+               m_socket.Send(PacketParser.EncodePacket(packet));
             }
             catch
             {
                continue;
             }
 
-            lock (m_packetSyncRoot)
-            {
-               if (m_packetQueue.Count > 0)
-               {
-                  m_packetQueue.Dequeue();
-               }
-            }
+            m_packetQueue.Dequeue();
          }
       }
 
       private void OnClosed(object sender, EventArgs e)
       {
          Publish("disconnect");
-      }
-
-      private IEnumerable<Packet> NextPacket()
-      {
-         lock (m_packetSyncRoot)
-         {
-            while (true)
-            {
-               if (!Connected || m_packetQueue.Count == 0)
-               {
-                  Monitor.Wait(m_packetSyncRoot);
-               }
-               else
-               {
-                  yield return m_packetQueue.Peek();
-               }
-            }
-         }
       }
    }
 }
