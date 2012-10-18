@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 
 namespace WebSocketClient
@@ -13,9 +14,9 @@ namespace WebSocketClient
       private readonly Dictionary<string, List<Action<string, Action<string>>>> m_eventListeners =
          new Dictionary<string, List<Action<string, Action<string>>>>();
 
-      private ReaderWriterLockSlim SlimLock = new ReaderWriterLockSlim();
+      private readonly ReaderWriterLockSlim m_eventListenerLock = new ReaderWriterLockSlim();
 
-      private Dictionary<string, Action<string>> m_acks = new Dictionary<string, Action<string>>();
+      private readonly Dictionary<string, Action<string>> m_acks = new Dictionary<string, Action<string>>();
 
       public Namespace(string name, SocketIOClient socket)
       {
@@ -25,7 +26,7 @@ namespace WebSocketClient
 
       public void HandlePacket(Packet packet)
       {
-         Action<string> ack = (args) => m_socket.SendPacket(new Packet { Type = PacketType.Ack, Args = args, AckId = packet.Id });
+         Action<string> ack = args => m_socket.SendPacket(new Packet { Type = PacketType.Ack, Args = args, AckId = packet.Id });
 
          switch (packet.Type)
          {
@@ -66,7 +67,7 @@ namespace WebSocketClient
          if (string.IsNullOrEmpty(eventName) || !m_eventListeners.ContainsKey(eventName)) 
             return;
          
-         SlimLock.EnterReadLock();
+         m_eventListenerLock.EnterReadLock();
 
          var callbacks = m_eventListeners[eventName];
 
@@ -75,7 +76,7 @@ namespace WebSocketClient
             try { cb(data, ack); } catch { /* Intentionally suppress errors blank. */ }
          }
 
-         SlimLock.ExitReadLock();
+         m_eventListenerLock.ExitReadLock();
       }
 
       public string Name { get; private set; }
@@ -92,7 +93,7 @@ namespace WebSocketClient
          if (ack != null)
          {
             packet.Ack = "data";
-            packet.Id = (++m_ackPacketCount).ToString();
+            packet.Id = (++m_ackPacketCount).ToString(CultureInfo.InvariantCulture);
             m_acks[packet.Id] = ack;
          }
 
@@ -103,7 +104,7 @@ namespace WebSocketClient
       {
          if (callback != null && eventName != null)
          {
-            SlimLock.EnterWriteLock();
+            m_eventListenerLock.EnterWriteLock();
 
             if (m_eventListeners.ContainsKey(eventName))
             {
@@ -114,7 +115,7 @@ namespace WebSocketClient
                m_eventListeners[eventName] = new List<Action<string, Action<string>>> { callback };
             }
 
-            SlimLock.ExitWriteLock();
+            m_eventListenerLock.ExitWriteLock();
          }
 
          return this;
@@ -124,11 +125,11 @@ namespace WebSocketClient
       {
          if (callback != null && eventName != null && m_eventListeners.ContainsKey(eventName))
          {
-            SlimLock.EnterWriteLock();
+            m_eventListenerLock.EnterWriteLock();
             
             m_eventListeners[eventName].Remove(callback);
           
-            SlimLock.ExitWriteLock();
+            m_eventListenerLock.ExitWriteLock();
          }
 
          return this;
