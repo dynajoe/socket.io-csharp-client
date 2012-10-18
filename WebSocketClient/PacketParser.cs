@@ -1,4 +1,4 @@
-using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using Newtonsoft.Json;
@@ -6,42 +6,6 @@ using Newtonsoft.Json.Linq;
 
 namespace WebSocketClient
 {
-   public enum PacketType
-   {
-      Disconnect,
-      Connect,
-      Heartbeat,
-      Message,
-      Json,
-      Event,
-      Ack,
-      Error,
-      NoOp
-   }
-
-   public class Packet
-   {
-      public PacketType Type { get; set; }
-
-      public string Data { get; set; }
-
-      public string Ack { get; set; }
-      
-      public string AckId { get; set; }
-
-      public string EndPoint { get; set; }
-
-      public string Id { get; set; }
-
-      public string Name { get; set; }
-
-      public string Args { get; set; }
-
-      public string Advice { get; set; }
-
-      public string Reason { get; set; }
-   }
-
    public static class PacketParser
    {
       private class Event
@@ -53,14 +17,14 @@ namespace WebSocketClient
          public object Args { get; set; }
       }
 
-      private static Dictionary<string, string> Reasons = new Dictionary<string, string>()
+      private static readonly Dictionary<string, string> Reasons = new Dictionary<string, string>
       {
          {"0", "transport not supported"},
          {"1", "client not handshaken"},
          {"2", "unauthorized"},
       };
 
-      private static Dictionary<string, string> Advice = new Dictionary<string, string>()
+      private static readonly Dictionary<string, string> Advice = new Dictionary<string, string>
       {
          {"0", "reconnect"},
       };
@@ -133,7 +97,7 @@ namespace WebSocketClient
       {
          var parts = new List<string>();
 
-         parts.Add(((int) packet.Type).ToString());
+         parts.Add(((int) packet.Type).ToString(CultureInfo.InvariantCulture));
          parts.Add((packet.Id ?? "") + (packet.Ack == "data" ? "+" : string.Empty));
          parts.Add(packet.EndPoint ?? "");
          string data = packet.Data;

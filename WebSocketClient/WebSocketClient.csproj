@@ -52,8 +52,10 @@
   <ItemGroup>
     <Compile Include="Namespace.cs" />
     <Compile Include="HandshakeResult.cs" />
+    <Compile Include="Packet.cs" />
     <Compile Include="PacketParser.cs" />
     <Compile Include="EntryPoint.cs" />
+    <Compile Include="PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketIOClient.cs" />
   </ItemGroup>
