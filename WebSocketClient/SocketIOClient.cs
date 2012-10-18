@@ -63,11 +63,10 @@ namespace WebSocketClient
          if (handshakeResult == HandshakeResult.Success)
          {
             Publish("connecting");
+            var socketUri = string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}",
+               uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id);
 
-            m_socket = new WebSocket(
-               string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}", uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id),
-               string.Empty,
-               SocketVersion);
+            m_socket = new WebSocket(socketUri, string.Empty, SocketVersion);
 
             m_socket.AllowUnstrustedCertificate = AllowUnstrustedCertificate;
             m_socket.Opened += OnOpened;

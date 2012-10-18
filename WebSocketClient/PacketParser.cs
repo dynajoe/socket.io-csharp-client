@@ -131,9 +131,9 @@ namespace WebSocketClient
 
       public static string EncodePacket(Packet packet)
       {
-         var parts = new List<object>();
+         var parts = new List<string>();
 
-         parts.Add((int) packet.Type);
+         parts.Add(((int) packet.Type).ToString());
          parts.Add((packet.Id ?? "") + (packet.Ack == "data" ? "+" : string.Empty));
          parts.Add(packet.EndPoint ?? "");
          string data = packet.Data;
