@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WebSocketClient
+namespace SocketIOClient
 {
    class EntryPoint
    {

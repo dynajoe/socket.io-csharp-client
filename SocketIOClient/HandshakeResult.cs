@@ -1,4 +1,4 @@
-namespace WebSocketClient
+namespace SocketIOClient
 {
    public enum HandshakeResult
    {
