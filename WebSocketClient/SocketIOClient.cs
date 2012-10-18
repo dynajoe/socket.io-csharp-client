@@ -245,18 +245,18 @@ namespace WebSocketClient
             try
             {
                m_socket.Send(PacketParser.EncodePacket(p));
-
-               lock (m_packetSyncRoot)
-               {
-                  if (m_packetQueue.Count > 0)
-                  {
-                     m_packetQueue.Dequeue();
-                  }
-               }
             }
-            catch (Exception)
+            catch
             {
+               continue;
+            }
 
+            lock (m_packetSyncRoot)
+            {
+               if (m_packetQueue.Count > 0)
+               {
+                  m_packetQueue.Dequeue();
+               }
             }
          }
       }
