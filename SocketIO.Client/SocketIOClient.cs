@@ -1,40 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Threading;
-using System.Timers;
 using SocketIO.Client.Impl;
-using Timer = System.Timers.Timer;
 
 namespace SocketIO.Client
 {
    public class SocketIOClient
    {
       private readonly IConnectionFactory m_connectionFactory;
-      
+      private readonly IPacketQueueProcessor m_packetQueueProcessor;
+
       public const string DefaultNamespace = "";
       
-      private readonly Queue<Packet> m_packetQueue = new Queue<Packet>();
-
       private readonly Dictionary<string, Namespace> m_nameSpaces = new Dictionary<string, Namespace>();
-
-      private readonly Timer m_heartBeatTimer;
 
       private IWebSocket m_socket;
 
-      private readonly EventWaitHandle m_packetWaitHandle = new EventWaitHandle(true, EventResetMode.ManualReset);
-
-      internal SocketIOClient(IConnectionFactory connectionFactory)
+      internal SocketIOClient(IConnectionFactory connectionFactory, IPacketQueueProcessor packetQueueProcessor)
       {
          m_connectionFactory = connectionFactory;
-         m_heartBeatTimer = new Timer { Enabled = true, AutoReset = true };
-         m_heartBeatTimer.Elapsed += OnHeartBeat;
-
-         ThreadPool.QueueUserWorkItem(ProcessPackets);  
+         m_packetQueueProcessor = packetQueueProcessor;
       }
 
       public SocketIOClient()
-         : this(new ConnectionFactory())
+         : this(new ConnectionFactory(), new PacketQueueProcessor())
       {
       }
 
@@ -57,8 +46,6 @@ namespace SocketIO.Client
          if (Connected || Connecting || Reconnecting)
             return;
 
-         m_heartBeatTimer.Stop();
-
          ServerUrl = serverUrl;
 
          var uri = new Uri(serverUrl);
@@ -68,6 +55,7 @@ namespace SocketIO.Client
          if (handshakeResult == HandshakeResult.Success)
          {
             Publish("connecting");
+
             var socketUri = string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}",
                uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id);
 
@@ -80,9 +68,6 @@ namespace SocketIO.Client
             m_socket.Closed += OnClosed;
 
             m_socket.Open();
-
-            m_heartBeatTimer.Interval = HeartbeatTimeout;
-            m_heartBeatTimer.Start();
          }
       }
 
@@ -146,13 +131,7 @@ namespace SocketIO.Client
 
       internal void SendPacket(Packet packet)
       {
-         m_packetQueue.Enqueue(packet);
-         m_packetWaitHandle.Set();
-      }
-
-      private void OnHeartBeat(object sender, ElapsedEventArgs e)
-      {
-         SendPacket(new Packet { Type = PacketType.Heartbeat });
+         m_packetQueueProcessor.Enqueue(packet);
       }
 
       private HandshakeResult DoHandshake(Uri uri)
@@ -206,7 +185,6 @@ namespace SocketIO.Client
 
       private void OnOpened(object sender, EventArgs e)
       {
-         m_packetWaitHandle.Set();
          Publish("connect");
       }
 
@@ -235,34 +213,7 @@ namespace SocketIO.Client
          }
       }
 
-      /// <summary>
-      /// This implementation is not safe for multiple threads attempting to send packets.
-      /// It's intended to ensure delivery of packets when there are packets to send.
-      /// </summary>
-      private void ProcessPackets(object state)
-      {
-         while (true)
-         {
-            if (!Connected || m_packetQueue.Count == 0)
-            {
-               m_packetWaitHandle.WaitOne();
-               continue;
-            }
-
-            var packet = m_packetQueue.Peek();
-
-            try
-            {
-               m_socket.Write(PacketParser.EncodePacket(packet));
-            }
-            catch
-            {
-               continue;
-            }
-
-            m_packetQueue.Dequeue();
-         }      }
-
+     
       private void OnClosed(object sender, EventArgs e)
       {
          Publish("disconnect");
