@@ -53,13 +53,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Impl\ConnectionFactory.cs" />
+    <Compile Include="Impl\ErrorEventArgs.cs" />
+    <Compile Include="Impl\IConnectionFactory.cs" />
+    <Compile Include="Impl\ISimpleHttpGetRequest.cs" />
+    <Compile Include="Impl\IWebSocket.cs" />
     <Compile Include="Namespace.cs" />
-    <Compile Include="HandshakeResult.cs" />
-    <Compile Include="Packet.cs" />
-    <Compile Include="PacketParser.cs" />
-    <Compile Include="PacketType.cs" />
+    <Compile Include="Impl\HandshakeResult.cs" />
+    <Compile Include="Impl\Packet.cs" />
+    <Compile Include="Impl\PacketParser.cs" />
+    <Compile Include="Impl\PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Impl\SimpleHttpGetRequest.cs" />
     <Compile Include="SocketIOClient.cs" />
+    <Compile Include="Impl\MessageReceivedEventArgs.cs" />
+    <Compile Include="Impl\WebSocketWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

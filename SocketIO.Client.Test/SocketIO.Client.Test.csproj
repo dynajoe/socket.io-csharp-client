@@ -48,6 +48,7 @@
     <Compile Include="PacketParser\Encode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PacketParser\Decode.cs" />
+    <Compile Include="SocketIOClient\SocketIOClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SocketIO.Client\SocketIO.Client.csproj">
@@ -55,6 +56,7 @@
       <Name>SocketIO.Client</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

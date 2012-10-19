@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace SocketIO.Client
+namespace SocketIO.Client.Impl
 {
-   public static class PacketParser
+   internal static class PacketParser
    {
       private class Event
       {

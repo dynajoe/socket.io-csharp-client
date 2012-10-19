@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
+using SocketIO.Client.Impl;
 
 namespace SocketIO.Client
 {
@@ -18,13 +19,13 @@ namespace SocketIO.Client
 
       private readonly Dictionary<string, Action<string>> m_acks = new Dictionary<string, Action<string>>();
 
-      public Namespace(string name, SocketIOClient socket)
+      internal Namespace(string name, SocketIOClient socket)
       {
          m_socket = socket;
          Name = name;
       }
 
-      public void HandlePacket(Packet packet)
+      internal void HandlePacket(Packet packet)
       {
          Action<string> ack = args => m_socket.SendPacket(new Packet { Type = PacketType.Ack, Args = args, AckId = packet.Id });
 

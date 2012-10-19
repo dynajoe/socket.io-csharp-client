@@ -2,8 +2,7 @@
 using SocketIO.Client;
 
 namespace SimpleClient
-{
-   class Example
+{   class Example
    {
       static void Main()
       {

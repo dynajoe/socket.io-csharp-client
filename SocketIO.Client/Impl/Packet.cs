@@ -1,6 +1,6 @@
-namespace SocketIO.Client
+namespace SocketIO.Client.Impl
 {
-   public class Packet
+   internal class Packet
    {
       public PacketType Type { get; set; }
 

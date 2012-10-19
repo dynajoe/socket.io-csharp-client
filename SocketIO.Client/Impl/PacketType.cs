@@ -1,6 +1,6 @@
-namespace SocketIO.Client
+namespace SocketIO.Client.Impl
 {
-   public enum PacketType
+   internal enum PacketType
    {
       Disconnect,
       Connect,

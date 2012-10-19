@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SocketIO.Client.Impl;
 
 namespace SocketIO.Client
 {

@@ -3,34 +3,39 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Timers;
-using SuperSocket.ClientEngine;
-using WebSocket4Net;
+using SocketIO.Client.Impl;
 using Timer = System.Timers.Timer;
 
 namespace SocketIO.Client
 {
    public class SocketIOClient
    {
-      public const string DefaultNamespace = "";
-
-      private const WebSocketVersion SocketVersion = WebSocketVersion.Rfc6455;
-
-      private readonly Queue<Packet> m_packetQueue = new Queue<Packet>();
+      private readonly IConnectionFactory m_connectionFactory;
       
+      public const string DefaultNamespace = "";
+      
+      private readonly Queue<Packet> m_packetQueue = new Queue<Packet>();
+
       private readonly Dictionary<string, Namespace> m_nameSpaces = new Dictionary<string, Namespace>();
 
       private readonly Timer m_heartBeatTimer;
 
-      private WebSocket m_socket;
+      private IWebSocket m_socket;
 
       private readonly EventWaitHandle m_packetWaitHandle = new EventWaitHandle(true, EventResetMode.ManualReset);
 
-      public SocketIOClient()
+      internal SocketIOClient(IConnectionFactory connectionFactory)
       {
+         m_connectionFactory = connectionFactory;
          m_heartBeatTimer = new Timer { Enabled = true, AutoReset = true };
          m_heartBeatTimer.Elapsed += OnHeartBeat;
 
-         ThreadPool.QueueUserWorkItem(ProcessPackets);
+         ThreadPool.QueueUserWorkItem(ProcessPackets);  
+      }
+
+      public SocketIOClient()
+         : this(new ConnectionFactory())
+      {
       }
 
       public bool AllowUnstrustedCertificate { get; set; }
@@ -41,11 +46,11 @@ namespace SocketIO.Client
 
       protected string ServerUrl { get; private set; }
 
-      public bool Connected { get { return m_socket != null && m_socket.State == WebSocketState.Open; } }
+      public bool Connected { get { return m_socket != null && m_socket.Connected; } }
 
       public bool Reconnecting { get; private set; }
 
-      public bool Connecting { get { return m_socket != null && m_socket.State == WebSocketState.Connecting; } }
+      public bool Connecting { get { return m_socket != null && m_socket.Connecting; } }
 
       public void Connect(string serverUrl)
       {
@@ -66,14 +71,13 @@ namespace SocketIO.Client
             var socketUri = string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}",
                uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id);
 
-            m_socket = new WebSocket(socketUri, string.Empty, SocketVersion);
-
+            m_socket = m_connectionFactory.CreateWebSocket(socketUri);
+            
             m_socket.AllowUnstrustedCertificate = AllowUnstrustedCertificate;
             m_socket.Opened += OnOpened;
             m_socket.MessageReceived += OnMessageReceived;
             m_socket.Error += OnError;
             m_socket.Closed += OnClosed;
-            m_socket.EnableAutoSendPing = false; //Socket.IO has a different mechanism for heartbeats
 
             m_socket.Open();
 
@@ -103,7 +107,7 @@ namespace SocketIO.Client
             Publish("disconnect");
          }
       }
-
+      
       public Namespace Of(string name)
       {
          if (name == null || string.IsNullOrEmpty(name.Trim()))
@@ -140,7 +144,7 @@ namespace SocketIO.Client
          }
       }
 
-      public void SendPacket(Packet packet)
+      internal void SendPacket(Packet packet)
       {
          m_packetQueue.Enqueue(packet);
          m_packetWaitHandle.Set();
@@ -162,7 +166,7 @@ namespace SocketIO.Client
 
             var handshakeUrl = string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query);
 
-            responseText = new WebClient().DownloadString(handshakeUrl);
+            responseText = m_connectionFactory.CreateHttpRequest(handshakeUrl).Execute();
 
             var resultParts = responseText.Split(new[] { ':' });
 
@@ -249,7 +253,7 @@ namespace SocketIO.Client
 
             try
             {
-               m_socket.Send(PacketParser.EncodePacket(packet));
+               m_socket.Write(PacketParser.EncodePacket(packet));
             }
             catch
             {
@@ -257,8 +261,7 @@ namespace SocketIO.Client
             }
 
             m_packetQueue.Dequeue();
-         }
-      }
+         }      }
 
       private void OnClosed(object sender, EventArgs e)
       {
