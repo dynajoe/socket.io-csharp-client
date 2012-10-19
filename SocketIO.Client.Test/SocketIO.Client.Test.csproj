@@ -9,7 +9,7 @@
     <ProjectGuid>{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SocketIO.Client.Test</RootNamespace>
+    <RootNamespace>SocketIO.Client</RootNamespace>
     <AssemblyName>SocketIO.Client.Test</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -45,8 +45,9 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PacketParser\Encode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PacketParserTest.cs" />
+    <Compile Include="PacketParser\Decode.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SocketIO.Client\SocketIO.Client.csproj">

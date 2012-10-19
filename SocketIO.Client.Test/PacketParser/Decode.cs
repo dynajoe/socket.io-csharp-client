@@ -1,9 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace SocketIO.Client.Test
+namespace SocketIO.Client
 {
    [TestClass]
-   public class PacketParserTest
+   public class PacketParserDecode
    {
       [TestMethod]
       public void DecodeHeartBeat()
@@ -134,10 +134,25 @@ namespace SocketIO.Client.Test
       [TestMethod]
       public void DecodeMessage()
       {
-         var packet = PacketParser.DecodePacket("3:5:/ns");
+         var packet = PacketParser.DecodePacket("3:::message");
+         Assert.AreEqual(PacketType.Message, packet.Type);
+         Assert.AreEqual("message", packet.Data);
+      }
+
+      [TestMethod]
+      public void DecodeMessageWithIdAndEndpoint()
+      {
+          var packet = PacketParser.DecodePacket("3:5:/ns");
          Assert.AreEqual(PacketType.Message, packet.Type);
          Assert.AreEqual("5", packet.Id);
-         Assert.AreEqual("true", packet.Ack);
+         Assert.AreEqual("/ns", packet.EndPoint);
+      }
+
+      [TestMethod]
+      public void DecodeDisconnect()
+      {
+          var packet = PacketParser.DecodePacket("0::/ns");
+         Assert.AreEqual(PacketType.Disconnect, packet.Type);
          Assert.AreEqual("/ns", packet.EndPoint);
       }
 

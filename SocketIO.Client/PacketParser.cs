@@ -105,12 +105,16 @@ namespace SocketIO.Client
          parts.Add(((int) packet.Type).ToString(CultureInfo.InvariantCulture));
          parts.Add((packet.Id ?? "") + (packet.Ack == "data" ? "+" : string.Empty));
          parts.Add(packet.EndPoint ?? "");
+         
          string data = packet.Data;
 
          switch (packet.Type)
          {
-            case PacketType.Event:
-               data = JsonConvert.SerializeObject(new Event { Name = packet.Name, Args = packet.Data });
+             case PacketType.Connect:
+                 data = packet.QueryString;
+                 break;
+             case PacketType.Event:
+               data = JsonConvert.SerializeObject(new { name = packet.Name, args = string.IsNullOrEmpty(packet.Data) ? null : JArray.Parse(data) }, Formatting.None, new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore});
                break;
             case PacketType.Ack:
                data = packet.AckId + (!string.IsNullOrEmpty(packet.Args) ? "+" + packet.Args : string.Empty) ;
