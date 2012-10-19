@@ -21,7 +21,7 @@ io.sockets.on("connection", function (socket) {
 });
 ```
 
-Start the server by running ```npm install``` then ```node index.js``` from the ```Examples/Server``` folder.
+Start the server by running ```npm install``` then ```node index.js``` from the ```Example/Server``` directory.
 
 #### Client
 
