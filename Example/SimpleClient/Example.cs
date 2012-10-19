@@ -3,7 +3,7 @@ using SocketIO.Client;
 
 namespace SimpleClient
 {
-   class Program
+   class Example
    {
       static void Main()
       {

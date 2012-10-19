@@ -1,11 +1,29 @@
 # C# Socket.IO client
 A simple C# implementation of the Socket.IO client using [WebSocket4Net](http://websocket4net.codeplex.com/).
 
+*DISCLAIMER: This is not a complete implementation of the Socket.IO client. There are lots of missing parts. Please feel free to submit a pull-request to add whatever feature is missing that you need.*
+
 ## Usage
 
-```JavaScript
+#### Server
 
+```JavaScript
+var io = require("socket.io").listen(3000);
+
+io.sockets.on("connection", function (socket) {
+   socket.on("data", function (data) {
+      console.log("Client sent: " + data);
+      
+      if (data) {
+         socket.emit("data", data.toUpperCase());
+      }
+   });
+});
 ```
+
+Start the server by running ```node index.js```.
+
+#### Client
 
 ```CSharp
 using System;
@@ -13,7 +31,7 @@ using SocketIO.Client;
 
 namespace SimpleClient
 {
-   class Program
+   class Example
    {
       static void Main()
       {
@@ -33,3 +51,5 @@ namespace SimpleClient
    }
 }
 ```
+
+Run the C# client and interact with the server by typing anything into the console.

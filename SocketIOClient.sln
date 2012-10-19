@@ -12,6 +12,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketIO.Client", "SocketIO
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleClient", "Example\SimpleClient\SimpleClient.csproj", "{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{DEB63D29-8369-4848-B912-78DDF95BDBCD}"
+	ProjectSection(SolutionItems) = preProject
+		Example\Server\index.js = Example\Server\index.js
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
