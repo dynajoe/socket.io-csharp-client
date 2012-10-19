@@ -1,4 +1,4 @@
-namespace SocketIOClient
+namespace SocketIO.Client
 {
    public enum HandshakeResult
    {

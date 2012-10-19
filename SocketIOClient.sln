@@ -8,7 +8,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{494F06
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketIOClient", "SocketIOClient\SocketIOClient.csproj", "{D0193B00-D474-4AF3-BECF-F9015331B498}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketIO.Client", "SocketIO.Client\SocketIO.Client.csproj", "{D0193B00-D474-4AF3-BECF-F9015331B498}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleClient", "Example\SimpleClient\SimpleClient.csproj", "{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,6 +22,10 @@ Global
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|x86.Build.0 = Debug|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|x86.ActiveCfg = Release|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|x86.Build.0 = Release|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|x86.ActiveCfg = Debug|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|x86.Build.0 = Debug|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|x86.ActiveCfg = Release|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

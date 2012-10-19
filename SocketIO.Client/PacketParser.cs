@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace SocketIOClient
+namespace SocketIO.Client
 {
    public static class PacketParser
    {

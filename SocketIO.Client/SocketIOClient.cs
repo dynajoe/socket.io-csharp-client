@@ -7,7 +7,7 @@ using SuperSocket.ClientEngine;
 using WebSocket4Net;
 using Timer = System.Timers.Timer;
 
-namespace SocketIOClient
+namespace SocketIO.Client
 {
    public class SocketIOClient
    {
