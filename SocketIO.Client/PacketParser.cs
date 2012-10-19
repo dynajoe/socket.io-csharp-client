@@ -77,7 +77,7 @@ namespace SocketIO.Client
             case PacketType.Event:
                var packetEvent = JsonConvert.DeserializeObject<Event>(data);
                packet.Name = packetEvent.Name;
-               packet.Args = ((JContainer)packetEvent.Args).ToString(Formatting.None, null);
+               packet.Args = packetEvent.Args != null ? ((JContainer)packetEvent.Args).ToString(Formatting.None, null) : "[]";
                break;
             case PacketType.Ack:
                var ackMatches = Regex.Matches(data, @"^([0-9]+)(\+)?(.*)", RegexOptions.Compiled);

@@ -17,20 +17,58 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{DEB63D
 		Example\Server\index.js = Example\Server\index.js
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketIO.Client.Test", "SocketIO.Client.Test\SocketIO.Client.Test.csproj", "{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{47DB6F82-4AA9-4073-80DF-77BB69D8AF14}"
+	ProjectSection(SolutionItems) = preProject
+		Local.testsettings = Local.testsettings
+		SocketIOClient.vsmdi = SocketIOClient.vsmdi
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
 Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = SocketIOClient.vsmdi
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
 		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|Mixed Platforms.Build.0 = Debug|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|x86.ActiveCfg = Debug|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Debug|x86.Build.0 = Debug|x86
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|Any CPU.ActiveCfg = Release|x86
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|Mixed Platforms.Build.0 = Release|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|x86.ActiveCfg = Release|x86
 		{D0193B00-D474-4AF3-BECF-F9015331B498}.Release|x86.Build.0 = Release|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|Mixed Platforms.Build.0 = Debug|x86
 		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|x86.ActiveCfg = Debug|x86
 		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Debug|x86.Build.0 = Debug|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|Any CPU.ActiveCfg = Release|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|Mixed Platforms.Build.0 = Release|x86
 		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|x86.ActiveCfg = Release|x86
 		{C8C22EF8-55A3-47AC-98A2-76F8DF50E896}.Release|x86.Build.0 = Release|x86
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{B05760B2-EDAB-4A5B-B474-D878C3C33E9F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
