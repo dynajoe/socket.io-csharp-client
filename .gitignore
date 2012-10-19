@@ -11,3 +11,4 @@ _ReSharper.*
 *.resharper
 *.orig
 node_modules
+testresults
