@@ -21,5 +21,7 @@ namespace SocketIO.Client
       public string Advice { get; set; }
 
       public string Reason { get; set; }
+
+      public string QueryString { get; set; }
    }
 }

@@ -54,6 +54,10 @@ namespace SocketIO.Client
          
          switch (type)
          {
+            case PacketType.Connect:
+               packet.Data = null;
+               packet.QueryString = data;
+               break;
             case PacketType.Error:
                var errorParts = data.Split(new[] {'+'});
                
@@ -80,13 +84,14 @@ namespace SocketIO.Client
                packet.Args = packetEvent.Args != null ? ((JContainer)packetEvent.Args).ToString(Formatting.None, null) : "[]";
                break;
             case PacketType.Ack:
-               var ackMatches = Regex.Matches(data, @"^([0-9]+)(\+)?(.*)", RegexOptions.Compiled);
+               var ackMatches = Regex.Match(data, @"^(?<AckId>[0-9]+)(\+)?(?<Args>.*)", RegexOptions.Compiled);
                 
-               if (ackMatches.Count > 0)
+               if (ackMatches.Success)
                {
-                  packet.AckId = ackMatches[0].Value;
-                  packet.Args = ackMatches[1].Value;
+                  packet.AckId = ackMatches.Groups["AckId"].Value;
+                  packet.Args = string.IsNullOrEmpty(ackMatches.Groups["Args"].Value) ? "[]" : ackMatches.Groups["Args"].Value;
                }
+
                break;
          }
 
