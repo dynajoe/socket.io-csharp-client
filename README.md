@@ -15,7 +15,7 @@ io.sockets.on("connection", function (socket) {
       console.log("Client sent: " + data);
       
       if (data) {
-         socket.emit("data", data.toUpperCase());
+         socket.emit("data", data.toUpperCase(), { length: data.length });
       }
    });
 });
