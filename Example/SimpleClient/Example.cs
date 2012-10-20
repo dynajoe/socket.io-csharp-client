@@ -10,7 +10,15 @@ namespace SimpleClient
          
          var socket = io.Connect("http://localhost:3000/");
 
-         socket.On("data", (data, callback) => Console.WriteLine("Server sent: " + data));
+         socket.On("data", (args, callback) =>
+         {
+            Console.WriteLine("Server sent:");
+
+            for (int i = 0; i < args.Length; i++)
+            {
+               Console.WriteLine("[" + i + "] => " + args[i]);
+            }
+         });
          
          string line;
          

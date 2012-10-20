@@ -14,8 +14,8 @@ namespace SocketIO.Client
 
       private int m_ackPacketCount;
 
-      private readonly Dictionary<string, List<Action<string, Action<string>>>> m_eventListeners =
-         new Dictionary<string, List<Action<string, Action<string>>>>();
+      private readonly Dictionary<string, List<Action<object[], Action<string>>>> m_eventListeners =
+         new Dictionary<string, List<Action<object[], Action<string>>>>();
 
       private readonly ReaderWriterLockSlim m_eventListenerLock = new ReaderWriterLockSlim();
 
@@ -73,10 +73,11 @@ namespace SocketIO.Client
          m_eventListenerLock.EnterReadLock();
 
          var callbacks = m_eventListeners[eventName];
-
+         var args = JsonConvert.DeserializeObject<object[]>(data, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Include, Formatting = Formatting.None });
+         
          foreach (var cb in callbacks)
          {
-            try { cb(data, ack); } catch { /* Intentionally suppress errors blank. */ }
+            try { cb(args, ack); } catch { /* Intentionally suppress errors blank. */ }
          }
 
          m_eventListenerLock.ExitReadLock();
@@ -108,7 +109,7 @@ namespace SocketIO.Client
          SendPacket(packet);
       }
       
-      public Namespace On(string eventName, Action<string, Action<string>> callback)
+      public Namespace On(string eventName, Action<object[], Action<string>> callback)
       {
          if (callback != null && eventName != null)
          {
@@ -120,7 +121,7 @@ namespace SocketIO.Client
             }
             else
             {
-               m_eventListeners[eventName] = new List<Action<string, Action<string>>> { callback };
+               m_eventListeners[eventName] = new List<Action<object[], Action<string>>> { callback };
             }
 
             m_eventListenerLock.ExitWriteLock();
@@ -134,7 +135,7 @@ namespace SocketIO.Client
          return this;
       }
 
-      public Namespace RemoveListener(string eventName, Action<string, Action<string>> callback)
+      public Namespace RemoveListener(string eventName, Action<object[], Action<string>> callback)
       {
          if (callback != null && eventName != null && m_eventListeners.ContainsKey(eventName))
          {

@@ -165,7 +165,7 @@ namespace SocketIO.Client
             EndPoint = ""
          };
 
-         string actualData = null;
+         object[] actualData = null;
 
          socket.On("data", (data, callback) => { actualData = data; });
 
