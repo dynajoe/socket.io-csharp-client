@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SocketIO.Client.Impl;
 
 namespace SocketIO.Client
@@ -86,10 +88,15 @@ namespace SocketIO.Client
       {
          SendPacket(new Packet { Type = PacketType.Connect });
       }
-      
-      public void Emit(string eventName, string data, Action<string> ack = null)
+
+      public void Emit(string eventName, params object[] data)
       {
-         var packet = new Packet {Type = PacketType.Event, Name = eventName, Data = data};
+         Emit(eventName, data, null);
+      }
+
+      public void Emit(string eventName, object[] args, Action<string> ack)
+      {
+         var packet = new Packet { Type = PacketType.Event, Name = eventName, Data = JsonConvert.SerializeObject(args, Formatting.None, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }) };
 
          if (ack != null)
          {
@@ -117,8 +124,13 @@ namespace SocketIO.Client
             }
 
             m_eventListenerLock.ExitWriteLock();
-         }
 
+            if (m_socket.Connected && eventName == "connect")
+            {
+               callback(null, null);
+            }
+         }
+         
          return this;
       }
 

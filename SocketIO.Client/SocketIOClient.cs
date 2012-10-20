@@ -9,6 +9,7 @@ namespace SocketIO.Client
    {
       private readonly IConnectionFactory m_connectionFactory;
       private readonly IPacketQueueProcessor m_packetQueueProcessor;
+      private readonly IHeartBeatSignaler m_heartBeatSignaler;
 
       public const string DefaultNamespace = "";
       
@@ -16,14 +17,15 @@ namespace SocketIO.Client
 
       private IWebSocket m_socket;
 
-      internal SocketIOClient(IConnectionFactory connectionFactory, IPacketQueueProcessor packetQueueProcessor)
+      internal SocketIOClient(IConnectionFactory connectionFactory, IPacketQueueProcessor packetQueueProcessor, IHeartBeatSignaler heartBeatSignaler)
       {
          m_connectionFactory = connectionFactory;
          m_packetQueueProcessor = packetQueueProcessor;
+         m_heartBeatSignaler = heartBeatSignaler;
       }
 
       public SocketIOClient()
-         : this(new ConnectionFactory(), new PacketQueueProcessor())
+         : this(new ConnectionFactory(), new PacketQueueProcessor(), new HeartBeatSignaler())
       {
       }
 
@@ -41,10 +43,12 @@ namespace SocketIO.Client
 
       public bool Connecting { get { return m_socket != null && m_socket.Connecting; } }
 
-      public void Connect(string serverUrl)
+      public Namespace Connect(string serverUrl)
       {
          if (Connected || Connecting || Reconnecting)
-            return;
+            return Of(DefaultNamespace);
+         
+         m_heartBeatSignaler.Stop();
 
          ServerUrl = serverUrl;
 
@@ -66,19 +70,14 @@ namespace SocketIO.Client
             m_socket.MessageReceived += OnMessageReceived;
             m_socket.Error += OnError;
             m_socket.Closed += OnClosed;
+            
+            m_packetQueueProcessor.WebSocket = m_socket;
+            m_heartBeatSignaler.Start(m_socket, HeartbeatTimeout);
 
             m_socket.Open();
          }
-      }
 
-      public void On(string eventName, Action<string, Action<string>> callback)
-      {
-         Of(DefaultNamespace).On(eventName, callback);
-      }
-
-      public void Emit(string eventName, string data)
-      {
-         Of(DefaultNamespace).Emit(eventName, data);
+         return Of(DefaultNamespace);
       }
 
       public void Disconnect()
@@ -212,7 +211,6 @@ namespace SocketIO.Client
             Of(packet.EndPoint).HandlePacket(packet);
          }
       }
-
      
       private void OnClosed(object sender, EventArgs e)
       {

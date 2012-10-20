@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using SocketIO.Client.Impl;
 
-namespace SocketIO.Client.Impl
+namespace SocketIO.Client
 {
    internal class PacketQueueProcessor : IPacketQueueProcessor
    {
@@ -19,11 +20,17 @@ namespace SocketIO.Client.Impl
             if (m_webSocket == value)
                return;
             
-            m_webSocket.Opened -= OnOpened;
-            m_webSocket.Closed -= OnClosed;
+            if (m_webSocket != null)
+            {
+               m_webSocket.Opened -= OnOpened;
+               m_webSocket.Closed -= OnClosed;
+            }
             
-            value.Opened += OnOpened;
-            value.Closed += OnClosed;
+            if (value != null)
+            {
+               value.Opened += OnOpened;
+               value.Closed += OnClosed;
+            }
             
             m_webSocket = value;
          }

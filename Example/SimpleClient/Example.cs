@@ -6,17 +6,17 @@ namespace SimpleClient
    {
       static void Main()
       {
-         var client = new SocketIOClient();
+         var io = new SocketIOClient();
+         
+         var socket = io.Connect("http://localhost:3000/");
 
-         client.On("data", (data, callback) => Console.WriteLine("Server sent: " + data));
-
-         client.Connect("http://localhost:3000/");
+         socket.On("data", (data, callback) => Console.WriteLine("Server sent: " + data));
          
          string line;
          
          while ((line = Console.ReadLine()) != "q")
          {
-            client.Emit("data", line);
+            socket.Emit("data", line);
          }
       }
    }

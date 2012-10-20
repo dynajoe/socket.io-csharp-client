@@ -1,4 +1,6 @@
-namespace SocketIO.Client.Impl
+using SocketIO.Client.Impl;
+
+namespace SocketIO.Client
 {
    internal interface IPacketQueueProcessor
    {
