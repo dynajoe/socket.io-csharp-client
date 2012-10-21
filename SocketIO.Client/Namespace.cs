@@ -49,7 +49,9 @@ namespace SocketIO.Client
                EmitLocally("message", packet.Data, packet.Ack == "data" ? ack : null);
                break;
             case PacketType.Event:
-               EmitLocally(packet.Name, packet.Args, packet.Ack == "data" ? ack : null);
+               var args = JsonConvert.DeserializeObject<object[]>(packet.Args);
+
+               EmitLocally(packet.Name, args, packet.Ack == "data" ? ack : null);
                break;
             case PacketType.Ack:
                if (m_acks.ContainsKey(packet.AckId))

@@ -15,14 +15,17 @@ namespace SocketIO.Client.Impl
 
       private void OnHeartBeat(object sender, ElapsedEventArgs e)
       {
-         m_socket.Write(PacketParser.EncodePacket(new Packet { Type = PacketType.Heartbeat }));
+         if (m_socket.Connected)
+         {
+            m_socket.Write(PacketParser.EncodePacket(new Packet { Type = PacketType.Heartbeat }));
+         }
       }
 
-      public void Start(IWebSocket socket, int timeout)
+      public void Start(IWebSocket socket, int interval)
       {
          m_socket = socket;
          
-         m_heartBeatTimer.Interval = timeout;
+         m_heartBeatTimer.Interval = interval;
          m_heartBeatTimer.Start();
       }
 
