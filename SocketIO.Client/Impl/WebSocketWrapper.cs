@@ -35,12 +35,6 @@ namespace SocketIO.Client.Impl
 
       public bool Connecting { get { return m_webSocket.State == WebSocketState.Connecting; } }
 
-      public bool EnableAutoSendPing
-      {
-         get { return m_webSocket.EnableAutoSendPing; }
-         set { m_webSocket.EnableAutoSendPing = value; }
-      }
-
       public bool AllowUnstrustedCertificate
       {
          get { return m_webSocket.AllowUnstrustedCertificate; }

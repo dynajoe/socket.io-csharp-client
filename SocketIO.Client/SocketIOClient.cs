@@ -57,7 +57,7 @@ namespace SocketIO.Client
 
          if (handshakeResult == HandshakeResult.Success)
          {
-            Publish("connecting", "websocket");
+            EmitLocally("connecting", "websocket");
 
             var socketUri = string.Format("{0}://{1}:{2}/{4}/1/websocket/{3}",
                uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id, resource);
@@ -90,7 +90,7 @@ namespace SocketIO.Client
 
             m_socket.Close();
 
-            Publish("disconnect", "booted");
+            EmitLocally("disconnect", "booted");
          }
       }
 
@@ -174,14 +174,14 @@ namespace SocketIO.Client
          }
          catch (Exception)
          {
-            Publish("error", responseText);
+            EmitLocally("error", responseText);
             return HandshakeResult.Error;
          }
 
          return HandshakeResult.Success;
       }
 
-      private void Publish(string eventName, string data = null)
+      private void EmitLocally(string eventName, string data = null)
       {
          foreach (var item in m_nameSpaces)
          {
@@ -191,12 +191,12 @@ namespace SocketIO.Client
 
       private void OnOpened(object sender, EventArgs e)
       {
-         Publish("connect");
+         EmitLocally("connect");
       }
 
       private void OnError(object sender, ErrorEventArgs e)
       {
-         Publish("error", e.Exception.Message);
+         EmitLocally("error", e.Exception.Message);
       }
 
       private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
@@ -211,7 +211,7 @@ namespace SocketIO.Client
                Reconnect();
             }
 
-            Publish("error", packet.Reason);
+            EmitLocally("error", packet.Reason);
          }
          else
          {
@@ -221,7 +221,7 @@ namespace SocketIO.Client
      
       private void OnClosed(object sender, EventArgs e)
       {
-         Publish("disconnect");
+         EmitLocally("disconnect");
       }
    }
 }

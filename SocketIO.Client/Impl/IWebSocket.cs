@@ -15,8 +15,6 @@ namespace SocketIO.Client.Impl
       bool Connected { get; }
       
       bool Connecting{ get; }
-      
-      bool EnableAutoSendPing { get; set; }
 
       bool AllowUnstrustedCertificate { get; set; }
 
