@@ -8,7 +8,7 @@ namespace SocketIO.Client
    public class SocketIOClient
    {
       private readonly IConnectionFactory m_connectionFactory;
-      private readonly IPacketQueueProcessor m_packetQueueProcessor;
+      
       private readonly IHeartBeatSignaler m_heartBeatSignaler;
 
       public const string DefaultNamespace = "";
@@ -17,15 +17,14 @@ namespace SocketIO.Client
 
       private IWebSocket m_socket;
 
-      internal SocketIOClient(IConnectionFactory connectionFactory, IPacketQueueProcessor packetQueueProcessor, IHeartBeatSignaler heartBeatSignaler)
+      internal SocketIOClient(IConnectionFactory connectionFactory, IHeartBeatSignaler heartBeatSignaler)
       {
          m_connectionFactory = connectionFactory;
-         m_packetQueueProcessor = packetQueueProcessor;
          m_heartBeatSignaler = heartBeatSignaler;
       }
 
       public SocketIOClient()
-         : this(new ConnectionFactory(), new PacketQueueProcessor(), new HeartBeatSignaler())
+         : this(new ConnectionFactory(), new HeartBeatSignaler())
       {
       }
 
@@ -43,7 +42,7 @@ namespace SocketIO.Client
 
       public bool Connecting { get { return m_socket != null && m_socket.Connecting; } }
 
-      public Namespace Connect(string serverUrl)
+      public Namespace Connect(string serverUrl, string resource = "socket.io")
       {
          if (Connected || Connecting || Reconnecting)
             return Of(DefaultNamespace);
@@ -54,14 +53,14 @@ namespace SocketIO.Client
 
          var uri = new Uri(serverUrl);
 
-         var handshakeResult = DoHandshake(uri);
+         var handshakeResult = DoHandshake(uri, resource);
 
          if (handshakeResult == HandshakeResult.Success)
          {
-            Publish("connecting");
+            Publish("connecting", "websocket");
 
-            var socketUri = string.Format("{0}://{1}:{2}/socket.io/1/websocket/{3}",
-               uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id);
+            var socketUri = string.Format("{0}://{1}:{2}/{4}/1/websocket/{3}",
+               uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.Port, Id, resource);
 
             m_socket = m_connectionFactory.CreateWebSocket(socketUri);
             
@@ -71,7 +70,6 @@ namespace SocketIO.Client
             m_socket.Error += OnError;
             m_socket.Closed += OnClosed;
             
-            m_packetQueueProcessor.WebSocket = m_socket;
             m_heartBeatSignaler.Start(m_socket, HeartbeatTimeout);
 
             m_socket.Open();
@@ -84,14 +82,18 @@ namespace SocketIO.Client
       {
          var wasConnected = Connected || Connecting;
 
-         m_socket.Close();
-
          if (wasConnected)
          {
-            Publish("disconnect");
+            m_heartBeatSignaler.Stop();
+
+            Of(DefaultNamespace).Emit("disconnect");
+
+            m_socket.Close();
+
+            Publish("disconnect", "booted");
          }
       }
-      
+
       public Namespace Of(string name)
       {
          if (name == null || string.IsNullOrEmpty(name.Trim()))
@@ -130,10 +132,15 @@ namespace SocketIO.Client
 
       internal void SendPacket(Packet packet)
       {
-         m_packetQueueProcessor.Enqueue(packet);
+         if (m_socket == null || !Connected)
+         {
+            return;
+         }
+
+         m_socket.Write(PacketParser.EncodePacket(packet));   
       }
 
-      private HandshakeResult DoHandshake(Uri uri)
+      private HandshakeResult DoHandshake(Uri uri, string resource)
       {
          string responseText = null;
 
@@ -142,7 +149,7 @@ namespace SocketIO.Client
             var query = uri.Query + (string.IsNullOrEmpty(uri.Query) ? "?" : "&") +
                         "t=" + Math.Round((DateTimeOffset.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds, 0);
 
-            var handshakeUrl = string.Format("{0}://{1}:{2}/socket.io/1/{3}", uri.Scheme, uri.Host, uri.Port, query);
+            var handshakeUrl = string.Format("{0}://{1}:{2}/{4}/1/{3}", uri.Scheme, uri.Host, uri.Port, query, resource);
 
             responseText = m_connectionFactory.CreateHttpRequest(handshakeUrl).Execute();
 

@@ -64,8 +64,13 @@ namespace SocketIO.Client
                break;
          }
       }
+      
+      public void EmitLocally(string eventName, params object[] data)
+      {
+         EmitLocally(eventName, data, null);
+      }
 
-      public void EmitLocally(string eventName, string data = null, Action<string> ack = null)
+      public void EmitLocally(string eventName, object[] data = null, Action<string> ack = null)
       {
          if (string.IsNullOrEmpty(eventName) || !m_eventListeners.ContainsKey(eventName)) 
             return;
@@ -73,11 +78,10 @@ namespace SocketIO.Client
          m_eventListenerLock.EnterReadLock();
 
          var callbacks = m_eventListeners[eventName];
-         var args = JsonConvert.DeserializeObject<object[]>(data, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Include, Formatting = Formatting.None });
-         
+
          foreach (var cb in callbacks)
          {
-            try { cb(args, ack); } catch { /* Intentionally suppress errors blank. */ }
+            try { cb(data, ack); } catch { /* Intentionally suppress errors blank. */ }
          }
 
          m_eventListenerLock.ExitReadLock();
@@ -157,7 +161,8 @@ namespace SocketIO.Client
             return;
          }
 
-         SendPacket(new Packet { Type = PacketType.Disconnect});
+         SendPacket(new Packet { Type = PacketType.Disconnect });
+         EmitLocally("disconnect");
       }
 
       private void SendPacket(Packet packet)

@@ -60,13 +60,12 @@
     <Compile Include="Impl\IConnectionFactory.cs" />
     <Compile Include="Impl\ISimpleHttpGetRequest.cs" />
     <Compile Include="Impl\IWebSocket.cs" />
-    <Compile Include="Impl\IPacketQueueProcessor.cs" />
+    <Compile Include="Impl\PacketSentEventArgs.cs" />
     <Compile Include="Namespace.cs" />
     <Compile Include="Impl\HandshakeResult.cs" />
     <Compile Include="Impl\Packet.cs" />
     <Compile Include="Impl\PacketParser.cs" />
     <Compile Include="Impl\PacketType.cs" />
-    <Compile Include="Impl\PacketQueueProcessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Impl\SimpleHttpGetRequest.cs" />
     <Compile Include="SocketIOClient.cs" />

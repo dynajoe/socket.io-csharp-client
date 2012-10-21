@@ -1,0 +1,24 @@
+<html>
+<head>
+   <title>Test Client</title>
+
+   <script type="text/javascript" src="http://localhost:3000/socket.io/socket.io.js">
+   </script>
+   <script type="text/javascript">
+      window.addEventListener('load', function () {
+         var socket = io.connect("http://localhost:3000");
+
+         socket.on('data', function (data) {
+            console.log(data);
+         });
+
+         socket.on('disconnect', function (reason) {
+            console.log('disconnected - reason: ' + reason);
+         });
+      });
+   </script>
+</head>
+<body>
+
+</body>
+</html>

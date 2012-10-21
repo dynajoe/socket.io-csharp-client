@@ -12,7 +12,6 @@ namespace SocketIO.Client
       internal ISimpleHttpGetRequest fakeHttp;
       internal IWebSocket fakeWebSocket;
       internal IConnectionFactory factory;
-      internal IPacketQueueProcessor packetQueueProcessor;
       protected bool isConnected;
       protected string handshakeResponse = "9AdwZi96P9Vf4usPhuxt:60:60:websocket,htmlfile,xhr-polling,jsonp-polling";
       private SocketIOClient io;
@@ -25,7 +24,6 @@ namespace SocketIO.Client
          factory = A.Fake<IConnectionFactory>();
          fakeHttp = A.Fake<ISimpleHttpGetRequest>();
          fakeWebSocket = A.Fake<IWebSocket>();
-         packetQueueProcessor = A.Fake<IPacketQueueProcessor>();
          heartBeatSignaler = A.Fake<IHeartBeatSignaler>();
 
          A.CallTo(() => factory.CreateHttpRequest(A<string>._)).Returns(fakeHttp);
@@ -45,7 +43,7 @@ namespace SocketIO.Client
             fakeWebSocket.Closed += Raise.With(fakeWebSocket, EventArgs.Empty).Now;
          });
 
-         io = new SocketIOClient(factory, packetQueueProcessor, heartBeatSignaler);
+         io = new SocketIOClient(factory, heartBeatSignaler);
 
          socket = io.Connect("http://localhost:3000");
       }
@@ -57,7 +55,6 @@ namespace SocketIO.Client
          factory = null;
          fakeHttp = null;
          fakeWebSocket = null;
-         packetQueueProcessor = null;
          socket = null;
       }
 
@@ -100,9 +97,11 @@ namespace SocketIO.Client
             EndPoint = string.Empty
          };
 
+         var expectedData = PacketParser.EncodePacket(expected);
+
          socket.Emit("eventName", "data");
          
-         A.CallTo(() => packetQueueProcessor.Enqueue(A<Packet>.That.Matches(a => a.Equals(expected)))).MustHaveHappened();
+         A.CallTo(() => fakeWebSocket.Write(expectedData)).MustHaveHappened();
       }
 
       [Test]
@@ -120,7 +119,7 @@ namespace SocketIO.Client
 
          io.Of(null).Emit("eventName", "data");
 
-         A.CallTo(() => packetQueueProcessor.Enqueue(A<Packet>.That.Matches(a => a.Equals(expected)))).MustHaveHappened(Repeated.Exactly.Times(2));
+         A.CallTo(() => fakeWebSocket.Write(PacketParser.EncodePacket(expected))).MustHaveHappened(Repeated.Exactly.Times(2));
       }
 
       [Test]
@@ -136,7 +135,7 @@ namespace SocketIO.Client
 
          io.Of("/ns").Emit("eventName", "data");
 
-         A.CallTo(() => packetQueueProcessor.Enqueue(A<Packet>.That.Matches(a => a.Equals(expected)))).MustHaveHappened();
+         A.CallTo(() => fakeWebSocket.Write(PacketParser.EncodePacket(expected))).MustHaveHappened();
       }
       [Test]
       public void WhenEmitWithMultipleArgs_ItShouldSendTheCorrectPacket()
@@ -151,7 +150,7 @@ namespace SocketIO.Client
 
          socket.Emit("eventName", "a", "b", "c", "d");
 
-         A.CallTo(() => packetQueueProcessor.Enqueue(A<Packet>.That.Matches(a => a.Equals(expected)))).MustHaveHappened();
+         A.CallTo(() => fakeWebSocket.Write(PacketParser.EncodePacket(expected))).MustHaveHappened();
       }
 
       [Test]
