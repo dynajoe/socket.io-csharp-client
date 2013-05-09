@@ -84,6 +84,11 @@ namespace SocketIO.Client
 
          if (wasConnected)
          {
+            m_socket.Opened -= OnOpened;
+            m_socket.MessageReceived -= OnMessageReceived;
+            m_socket.Error -= OnError;
+            m_socket.Closed -= OnClosed;
+
             m_heartBeatSignaler.Stop();
 
             Of(DefaultNamespace).Emit("disconnect");
